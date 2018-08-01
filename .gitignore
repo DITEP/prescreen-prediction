@@ -10,14 +10,13 @@ __pycache__/
 
 data/
 
-main/
-!main/main_sections_tuning.py
+main/*
 
-examples/
+examples/*
 !examples/viz.py
 
 
-prescreen/vcare
+prescreen/vcare/*
 !prescreen/vcare/biology.py
 !prescreen/vcare/radiology.py
 !prescreen/vcare/reports.py
