@@ -20,34 +20,31 @@ def fetch_and_fold():
     description = 'Folding radiology reports from Ventura Care'
     parser = argparse.ArgumentParser(description=description)
 
-    parser.add_argument(['--version', '-V'],
-                        help='version number to keep track of files')
-    parser.add_argument(['-p', '--path'],
+    parser.add_argument('-p', '--path',
                         help='path to file that contains the reports')
-    parser.add_argument(['--id', '-I'],
+    parser.add_argument('--id', '-I',
                         help='id to connect to sql server')
-    parser.add_argument(['--ip', '-a'],
+    parser.add_argument('--ip', '-a',
                         help='ip adress of the sql server')
-    parser.add_argument(['--db', '-d'],
+    parser.add_argument('--db', '-d',
                         help='name of the database on the sql server')
-    parser.add_argument(['--targets', '-t'],
+    parser.add_argument('--targets', '-t',
                         help='name of the table containing targets on the db')
-    parser.add_argument(['--output', '-o'],
+    parser.add_argument('--output', '-o',
                         help='output path to write the folded result')
     # PATH = "/home/v_charvet/workspace/data/cr/cr_rad_tronc.xlsx"
 
     args = parser.parse_args()
 
     # getting variables from args
-    VERSION = args.V
-    PATH = args.p
+    PATH = args.path
 
-    engine = get_engine(args.I, args.a, args.d)
+    engine = get_engine(args.id, args.ip, args.db)
 
     key1, key2, date = 'patient_id', 'nip', 'date'
 
     # fetching targets table
-    df_targets = sql2df(engine, args.t).loc[:, [key2, 'id', 'C1J1']]
+    df_targets = sql2df(engine, args.targets).loc[:, [key2, 'id', 'C1J1']]
     df_targets.loc[:, 'C1J1'] = pd.to_datetime(df_targets['C1J1'],
                                                format='%Y-%m-%d',
                                                unit='D')
@@ -92,8 +89,8 @@ def fetch_and_fold():
 
     rad_folded.sort_values(by=[key1, date], inplace=True)
 
-    output = args.o
-    rad_folded.to_csv(output.format(VERSION), encoding='utf-8', sep=';')
+    output = args.output
+    rad_folded.to_csv(output, encoding='utf-8', sep=';')
 
     print('done')
 
@@ -101,37 +98,34 @@ def fetch_and_fold():
 
 
 def fetch_and_transorm():
-    description = 'Folding radiology reports from Ventura Care'
+    description = 'Transforms and unfolds radiology reports from Ventura Care'
     parser = argparse.ArgumentParser(description=description)
 
-    parser.add_argument(['--version', '-V'],
-                        help='version number to keep track of files')
-    parser.add_argument(['-p', '--path'],
+    parser.add_argument('-p', '--path',
                         help='path to file that contains the reports')
-    parser.add_argument(['--id', '-I'],
+    parser.add_argument('--id', '-I',
                         help='id to connect to sql server')
-    parser.add_argument(['--ip', '-a'],
+    parser.add_argument('--ip', '-a',
                         help='ip adress of the sql server')
-    parser.add_argument(['--db', '-d'],
+    parser.add_argument('--db', '-d',
                         help='name of the database on the sql server')
-    parser.add_argument(['--targets', '-t'],
+    parser.add_argument('--targets', '-t',
                         help='name of the table containing targets on the db')
-    parser.add_argument(['--output', '-o'],
+    parser.add_argument('--output', '-o',
                         help='output path to write the folded result')
     # PATH = "/home/v_charvet/workspace/data/cr/cr_rad_tronc.xlsx"
 
     args = parser.parse_args()
 
     # getting variables from args
-    VERSION = args.V
-    PATH = args.p
+    PATH = args.path
 
-    engine = get_engine(args.I, args.a, args.d)
+    engine = get_engine(args.id, args.ip, args.db)
 
     key1, key2, date = 'patient_id', 'nip', 'date'
 
     # fetching targets table
-    df_targets = sql2df(engine, args.t).loc[:, ['nip', 'id', 'C1J1']]
+    df_targets = sql2df(engine, args.targets).loc[:, ['nip', 'id', 'C1J1']]
     df_targets.loc[:, 'C1J1'] = pd.to_datetime(df_targets['C1J1'],
                                                format='%Y-%m-%d',
                                                unit='D')
@@ -167,9 +161,8 @@ def fetch_and_transorm():
 
 
     rad_folded.sort_values(by=[key1, date], inplace=True)
-    output = args.o
-    rad_folded.to_csv(output.format(VERSION),
-                      encoding='utf-8', sep=';')
+    output = args.output
+    rad_folded.to_csv(output, encoding='utf-8', sep=';')
 
     print('done')
 
@@ -177,7 +170,7 @@ def fetch_and_transorm():
 
 
 if __name__ == "__main__":
-    fetch_and_fold()
+    fetch_and_transorm()
 
 
 
