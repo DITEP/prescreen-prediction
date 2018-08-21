@@ -9,41 +9,38 @@ train a tfidf model
 """
 import pandas as pd
 
-from preprocessing.html_parser.parser import ReportsParser
-from preprocessing.utils.connection import get_engine, sql2df
+from clintk.html_parser.parser import ReportsParser
+from clintk.utils.connection import get_engine, sql2df
 
 import datetime
 import argparse
 
 
 def parse_cc():
-    description = 'Folding radiology reports from Simbad'
+    description = 'Folding cc text reports from Simbad'
     parser = argparse.ArgumentParser(description=description)
 
-    parser.add_argument(['--version', '-V'],
-                        help='version number to keep track of files')
-    parser.add_argument(['-p', '--path'],
+    parser.add_argument('-p', '--path',
                         help='path to file that contains the reports')
-    parser.add_argument(['--id', '-I'],
+    parser.add_argument('--id', '-I',
                         help='id to connect to sql server')
-    parser.add_argument(['--ip', '-a'],
+    parser.add_argument('--ip', '-a',
                         help='ip adress of the sql server')
-    parser.add_argument(['--db', '-d'],
+    parser.add_argument('--db', '-d',
                         help='name of the database on the sql server')
-    parser.add_argument(['--targets', '-t'],
+    parser.add_argument('--targets', '-t',
                         help='name of the table containing targets on the db')
-    parser.add_argument(['--output', '-o'],
+    parser.add_argument('--output', '-o',
                         help='output path to write the folded result')
 
     args = parser.parse_args()
 
     # getting variables from args
-    VERSION = args.V
-    PATH = args.p
+    PATH = args.path
 
-    engine = get_engine(args.I, args.a, args.d)
+    engine = get_engine(args.id, args.ip, args.db)
     # fetching targets
-    df_targets = sql2df(engine, args.t)
+    df_targets = sql2df(engine, args.targets)
 
 
     # fetching reports
@@ -72,7 +69,7 @@ def parse_cc():
 
     df = df.merge(df_targets, on='nip')
 
-    parser = ReportsParser(headers='b', is_html=False,
+    parser = ReportsParser(headers='b', is_html=False, norm=False,
                            n_jobs=1, col_name='value')
 
     df['value'] = parser.transform(df)
@@ -83,8 +80,8 @@ def parse_cc():
     df = df[df['value'] != '']
     df.drop_duplicates(inplace=True)
 
-    output = args.o
-    df.to_csv(output.format(VERSION), sep=';', encoding='utf-8')
+    output = args.output
+    df.to_csv(output, sep=';', encoding='utf-8')
 
     print('done')
 
@@ -92,33 +89,30 @@ def parse_cc():
 
 
 def parse_rh():
-    description = 'Folding radiology reports from Simbad'
+    description = 'Folding rh text reports from Simbad'
     parser = argparse.ArgumentParser(description=description)
 
-    parser.add_argument(['--version', '-V'],
-                        help='version number to keep track of files')
-    parser.add_argument(['-p', '--path'],
+    parser.add_argument('-p', '--path',
                         help='path to file that contains the reports')
-    parser.add_argument(['--id', '-I'],
+    parser.add_argument('--id', '-I',
                         help='id to connect to sql server')
-    parser.add_argument(['--ip', '-a'],
+    parser.add_argument('--ip', '-a',
                         help='ip adress of the sql server')
-    parser.add_argument(['--db', '-d'],
+    parser.add_argument('-db', '-d',
                         help='name of the database on the sql server')
-    parser.add_argument(['--targets', '-t'],
+    parser.add_argument('--targets', '-t',
                         help='name of the table containing targets on the db')
-    parser.add_argument(['--output', '-o'],
+    parser.add_argument('--output', '-o',
                         help='output path to write the folded result')
 
     args = parser.parse_args()
 
     # getting variables from args
-    VERSION = args.V
-    PATH = args.p
+    PATH = args.path
 
-    engine = get_engine(args.I, args.a, args.d)
+    engine = get_engine(args.id, args.ip, args.db)
     # fetching targets
-    df_targets = sql2df(engine, args.t)
+    df_targets = sql2df(engine, args.targets)
 
     # fetching reports
     df = pd.read_excel(PATH)
@@ -153,6 +147,7 @@ def parse_rh():
                'medecin referent', 'dicte le', 'dicte par']
     parser = ReportsParser(headers='b', remove_sections=sections,
                            is_html=False,
+                           norm=False,
                            col_name='value')
 
     df['value'] = parser.transform(df)
@@ -163,8 +158,8 @@ def parse_rh():
     df = df[df['value'] != '']
     df.drop_duplicates(inplace=True)
 
-    output = args.o
-    df.to_csv(output.format(VERSION), sep=';', encoding='utf-8')
+    output = args.output
+    df.to_csv(output, sep=';', encoding='utf-8')
 
     print('done')
 
