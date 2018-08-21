@@ -25,7 +25,7 @@ def fetch_and_fold():
     parser.add_argument('--id', '-I',
                         help='id to connect to sql server')
     parser.add_argument('--ip', '-a',
-                        help='ip adress of the sql server')
+                        help='ip address of the sql server')
     parser.add_argument('--db', '-d',
                         help='name of the database on the sql server')
     parser.add_argument('--targets', '-t',

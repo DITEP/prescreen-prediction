@@ -6,10 +6,10 @@ the table containing additionnal patients information from SQL server
 """
 import pandas as pd
 
-from preprocessing.utils.connection import get_engine, sql2df
-from preprocessing.utils.unfold import transform_and_label
-from preprocessing.utils.fold import Folder
-from preprocessing.html_parser.parser import ReportsParser
+from clintk.utils.connection import get_engine, sql2df
+from clintk.utils.unfold import transform_and_label
+from clintk.utils.fold import Folder
+from clintk.text_parser.parser import ReportsParser
 from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction.text import TfidfVectorizer
 
@@ -53,9 +53,10 @@ def fetch_and_fold():
 
     # filter SESSION and keep prescreen values
     mask = df_rad['SESSION'].isin(['NUM', 'PDF'])
-    mask_prescreen = df_rad['OBSERVATION DATE'] == 'Before Date'
 
-    df_rad = df_rad[~mask][mask_prescreen]
+    # mask_prescreen = df_rad['OBSERVATION DATE'] == 'Before Date'
+    df_rad = df_rad[~mask] #[mask_prescreen]
+
     df_rad['CR_DATE'] = pd.to_datetime(df_rad['CR_DATE'], format='%Y%m%d')
 
     # remove useless rows
@@ -73,13 +74,16 @@ def fetch_and_fold():
 
     rad_folded = folder.fold(df_rad)
 
+    # keeping only first report
+    rad_folded = rad_folded.groupby(key1, as_index=False).agg('first')
+
     # removing useless tags (blocks parsing)
     rad_folded['value'] = rad_folded.loc[:, 'value'].apply(lambda s: \
         str(s).replace('<u>', '').replace('</u>', ''))
 
-    sections = ['critere d evaluation', 'nom du protocole']
+    sections = ['resultats', 'resultat', 'evaluation des cibles', 'conclusion']
     parser = ReportsParser(headers='b', is_html=False, col_name='value',
-                           remove_sections=sections)
+                           sections=sections)
 
     rad_folded['value'] = parser.transform(rad_folded)
 

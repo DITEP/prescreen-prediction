@@ -7,7 +7,7 @@ They are denoted as CR
 """
 import pandas as pd
 
-from clintk.html_parser.parser import ReportsParser
+from clintk.text_parser.parser import ReportsParser
 from clintk.utils.connection import get_engine, sql2df
 
 import datetime
@@ -62,7 +62,6 @@ def parse_cr():
     df['nip'] = df.loc[:, 'nip'] \
         .apply(lambda s: s[:4] + '-' + s[4:-2] + ' ' + s[-2:])
 
-
     df.drop(['N° Dossier patient IGR', 'LC', 'NOCET', 'SIGLE_ETUDE',
              'LIBELLE_TYPE_ETUDE', 'NUM CR', 'CR RESP'], axis=1, inplace=True)
 
@@ -75,10 +74,9 @@ def parse_cr():
     df['value'] = df.loc[:, 'value'].apply(lambda s: \
         str(s).replace('<u>', '').replace('</u>', ''))
 
-    #@TODO only keep resultats, evaluation des cibles, conclusion
-    sections = ['critere d evaluation', 'nom du protocole']
+    sections = ['resultats', 'resultat', 'evaluation des cibles', 'conclusion']
     parser = ReportsParser(headers='b', is_html=False, col_name='value',
-                           remove_sections=sections)
+                           sections=sections)
 
     df['value'] = parser.transform(df)
 

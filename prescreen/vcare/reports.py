@@ -23,7 +23,7 @@ def fetch_and_fold():
     parser.add_argument('--id', '-I',
                         help='id to connect to sql server')
     parser.add_argument('--ip', '-a',
-                        help='ip adress of the sql server')
+                        help='ip address of the sql server')
     parser.add_argument('--db', '-d',
                         help='name of the database on the sql server')
     parser.add_argument('--targets', '-t',
@@ -63,14 +63,13 @@ def fetch_and_fold():
     reports_folded = folder.fold(df_reports)
 
     # taking only first report
-    reports_folded.groupby(key1, as_index=False)\
-        .agg('first')
+    reports_folded.groupby(key1, as_index=False).agg('first')
 
     # parsing and vectorising text reports
     sections = ['examens complementaire', 'hopital de jour',
                 'examen du patient']
 
-    parser = ReportsParser(remove_sections=sections, n_jobs=-1, norm=False,
+    parser = ReportsParser(sections=None, n_jobs=-1, norm=False,
                            col_name='value')
 
     reports_folded['value'] = parser.transform(reports_folded)
@@ -122,12 +121,15 @@ def fetch_and_transform():
     # joining features df with complete patient informations
     df_reports = df_reports.merge(df_targets, on=None, left_on='patient_id',
                                   right_on='id').drop('id', axis=1)
-    df_reports = df_reports[df_reports[date] <= df_reports['C1J1']]
+    # df_reports = df_reports[df_reports[date] <= df_reports['C1J1']]
 
     # folding frames so that they have the same columns
     # reports
     folder = Folder(key1, key2, ['report'], date, n_jobs=-1)
     reports_folded = folder.fold(df_reports)
+
+    reports_folded.sort_values('date', inplace=True) #unnecesary.
+    reports_folded.groupby(key1, as_index=False).agg('first')
 
     # parsing and vectorising text reports
     sections = ['examens complementaire', 'hopital de jour',
