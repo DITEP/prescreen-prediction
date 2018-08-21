@@ -46,11 +46,23 @@ def fetch_and_fold():
     # fetching reports
     df = pd.read_excel(PATH)
 
-    df_cc = df[df['CR NAT'] == 'CC']
+    # normalize nip
+    df['nip'] = df['N° Dossier patient IGR'].astype(str) + df['LC']
+    df['nip'] = df.loc[:, 'nip'] \
+        .apply(lambda s: s[:4] + '-' + s[4:-2] + ' ' + s[-2:])
 
-    df_rh  = df[df['CR NAT'] == 'RH']
-    # filter uninformative reports
+    df.drop(['N° Dossier patient IGR', 'LC', 'NOCET', 'SIGLE_ETUDE',
+             'LIBELLE_TYPE_ETUDE', 'NUM CR', 'CR RESP'], axis=1, inplace=True)
+
+    df_cc = df[df['CR NAT'] == 'CC']
+    df_rh = df[df['CR NAT'] == 'RH']
+
+    # taking only the first for each patient
+    df_cc = df_cc.groupby('nip', as_index=False).agg('first')
+
+    # filter uninformative reports and taking the first
     df_rh = df_rh[~(df_rh['text CR'].str.match('Examen du', na=False))]
+    df_rh = df_rh.groupby('nip', as_index=False).agg('first')
 
     df = pd.concat([df_cc, df_rh], ignore_index=True)
 
@@ -65,14 +77,7 @@ def fetch_and_fold():
         str(s).replace('<u>', '').replace('</u>', ''))
 
     # filter date
-    df = df[df['date'] <= (df['DATE_SIGN_OK'] + datetime.timedelta(weeks=6)) ]
-    # normalize nip
-    df['nip'] = df['N° Dossier patient IGR'].astype(str) + df['LC']
-    df['nip'] = df.loc[:, 'nip'] \
-        .apply(lambda s: s[:4] + '-' + s[4:-2] + ' ' + s[-2:])
-
-    df.drop(['N° Dossier patient IGR', 'LC', 'NOCET', 'SIGLE_ETUDE',
-             'LIBELLE_TYPE_ETUDE', 'NUM CR', 'CR RESP'], axis=1, inplace=True)
+    # df = df[df['date'] <= (df['DATE_SIGN_OK'] + datetime.timedelta(weeks=8))]
 
     df = df.merge(df_targets, on='nip')
 

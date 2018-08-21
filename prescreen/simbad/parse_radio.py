@@ -7,8 +7,8 @@ They are denoted as CR
 """
 import pandas as pd
 
-from preprocessing.html_parser.parser import ReportsParser
-from preprocessing.utils.connection import get_engine, sql2df
+from clintk.html_parser.parser import ReportsParser
+from clintk.utils.connection import get_engine, sql2df
 
 import datetime
 import argparse
@@ -18,30 +18,27 @@ def parse_cr():
     description = 'Folding radiology reports from Simbad'
     parser = argparse.ArgumentParser(description=description)
 
-    parser.add_argument(['--version', '-V'],
-                        help='version number to keep track of files')
-    parser.add_argument(['-p', '--path'],
+    parser.add_argument('-p', '--path',
                         help='path to file that contains the reports')
-    parser.add_argument(['--id', '-I'],
+    parser.add_argument('--id', '-I',
                         help='id to connect to sql server')
-    parser.add_argument(['--ip', '-a'],
+    parser.add_argument('--ip', '-a',
                         help='ip adress of the sql server')
-    parser.add_argument(['--db', '-d'],
+    parser.add_argument('--db', '-d',
                         help='name of the database on the sql server')
-    parser.add_argument(['--targets', '-t'],
+    parser.add_argument('--targets', '-t',
                         help='name of the table containing targets on the db')
-    parser.add_argument(['--output', '-o'],
+    parser.add_argument('--output', '-o',
                         help='output path to write the folded result')
 
     args = parser.parse_args()
 
     # getting variables from args
-    VERSION = args.V
-    PATH = args.p
+    PATH = args.path
 
-    engine = get_engine(args.I, args.a, args.d)
+    engine = get_engine(args.id, args.ip, args.db)
     # fetching targets
-    df_targets = sql2df(engine, args.t)
+    df_targets = sql2df(engine, args.targets)
 
     # fetching reports
     # PATH = 'data/cr_sfditep_2012.xlsx'
@@ -58,15 +55,19 @@ def parse_cr():
     df = df[~(df['value'].str.match('Examen du', na=False))]
 
     # filter by date
-    df = df[df['date'] <= (df['DATE_SIGN_OK'] + datetime.timedelta(weeks=6))]
+    # df = df[df['date'] <= (df['DATE_SIGN_OK'] + datetime.timedelta(weeks=8))]
 
     # normalize nip
     df['nip'] = df['N° Dossier patient IGR'].astype(str) + df['LC']
     df['nip'] = df.loc[:, 'nip'] \
         .apply(lambda s: s[:4] + '-' + s[4:-2] + ' ' + s[-2:])
 
+
     df.drop(['N° Dossier patient IGR', 'LC', 'NOCET', 'SIGLE_ETUDE',
              'LIBELLE_TYPE_ETUDE', 'NUM CR', 'CR RESP'], axis=1, inplace=True)
+
+    # taking only the first report
+    df = df.groupby('nip', as_index=False).agg('first')
 
     df = df.merge(df_targets, on='nip')
 
@@ -74,6 +75,7 @@ def parse_cr():
     df['value'] = df.loc[:, 'value'].apply(lambda s: \
         str(s).replace('<u>', '').replace('</u>', ''))
 
+    #@TODO only keep resultats, evaluation des cibles, conclusion
     sections = ['critere d evaluation', 'nom du protocole']
     parser = ReportsParser(headers='b', is_html=False, col_name='value',
                            remove_sections=sections)
@@ -88,8 +90,8 @@ def parse_cr():
     df = df.loc[:, ['nip', 'id', 'feature', 'value', 'date']]
 
     # output = '/home/v_charvet/workspace/data/features/simbad/radiology_v{}.csv'
-    output = args.o
-    df.to_csv(output.format(VERSION), sep=';', encoding='utf-8')
+    output = args.output
+    df.to_csv(output, sep=';', encoding='utf-8')
 
     print('done')
 
