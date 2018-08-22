@@ -2,60 +2,32 @@
 fetching and processing electronic medical reports
 """
 import pandas as pd
-import numpy as np
 
 from clintk.utils.connection import get_engine, sql2df
 from clintk.utils.fold import Folder
-from clintk.utils.unfold import transform_and_label
 from clintk.text_parser.parser import ReportsParser
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.pipeline import Pipeline
 
 import argparse
 
 
-def fetch_and_fold(path, id, ip, db, targets, n_reports):
+def fetch_and_fold(table, ID, ip, db, targets, n_reports):
     """ function to fetch reports from vcare database
 
     Parameters
     ----------
     For definition of parameters, see arguments in `main_fetch_and_fold`
     """
-
-
-
-def main_fetch_and_fold():
-    description = 'Folding text reports from Ventura Care'
-    parser = argparse.ArgumentParser(description=description)
-
-    parser.add_argument('--reports', '-r',
-                        help='name of the table contains the reports')
-    parser.add_argument('--id', '-I',
-                        help='id to connect to sql server')
-    parser.add_argument('--ip', '-a',
-                        help='ip address of the sql server')
-    parser.add_argument('--db', '-d',
-                        help='name of the database on the sql server')
-    parser.add_argument('--targets', '-t',
-                        help='name of the table containing targets on the db')
-    parser.add_argument('--output', '-o',
-                        help='output path to write the folded result')
-
-    args = parser.parse_args()
-
-    # getting variables from args
-
-    engine = get_engine(args.id, args.ip, args.db)
+    engine = get_engine(ID, ip, db)
 
     key1, key2, date = 'patient_id', 'nip', 'date'
 
     # data used to train the model
-    df_targets = sql2df(engine, args.targets).loc[:, ['nip', 'id', 'C1J1']]
+    df_targets = sql2df(engine, targets).loc[:, ['nip', 'id', 'C1J1']]
     df_targets.loc[:, 'C1J1'] = pd.to_datetime(df_targets['C1J1'],
                                                format='%Y-%m-%d',
                                                unit='D')
 
-    df_reports = sql2df(engine, args.reports)\
+    df_reports = sql2df(engine, table)\
         .loc[:, ['original_date', 'patient_id', 'report']]
 
     mask = [report is not None for report in df_reports['report']]
@@ -83,6 +55,34 @@ def main_fetch_and_fold():
                            col_name='value')
 
     reports_folded['value'] = parser.transform(reports_folded)
+
+    return reports_folded
+
+
+def main_fetch_and_fold():
+    description = 'Folding text reports from Ventura Care'
+    parser = argparse.ArgumentParser(description=description)
+
+    parser.add_argument('--reports', '-r',
+                        help='name of the table contains the reports')
+    parser.add_argument('--id', '-I',
+                        help='id to connect to sql server')
+    parser.add_argument('--ip', '-a',
+                        help='ip address of the sql server')
+    parser.add_argument('--db', '-d',
+                        help='name of the database on the sql server')
+    parser.add_argument('--targets', '-t',
+                        help='name of the table containing targets on the db')
+    parser.add_argument('--output', '-o',
+                        help='output path to write the folded result')
+    parser.add_argument('-n', '--nb',
+                        help='number of reports to fetch')
+    args = parser.parse_args()
+
+    # getting variables from args
+
+    reports_folded = fetch_and_fold(args.reports, args.id, args.ip, args.db,
+                                    args.targets, args.nb)
 
     output = args.output
     reports_folded.to_csv(output, encoding='utf-8', sep=';')

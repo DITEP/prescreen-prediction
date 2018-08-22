@@ -12,11 +12,10 @@ import pandas as pd
 from clintk.text_parser.parser import ReportsParser
 from clintk.utils.connection import get_engine, sql2df
 
-import datetime
 import argparse
 
 
-def fetch_and_fold(path, id, ip, db, targets, n_reports):
+def fetch_and_fold(path, ID, ip, db, targets, n_reports):
     """ function to fetch reports from simbad data
 
     Parameters
@@ -24,7 +23,7 @@ def fetch_and_fold(path, id, ip, db, targets, n_reports):
     For definition of parameters, see arguments in `main_fetch_and_fold`
     """
 
-    engine = get_engine(id, ip, db)
+    engine = get_engine(ID, ip, db)
     # fetching targets
     df_targets = sql2df(engine, targets)
 

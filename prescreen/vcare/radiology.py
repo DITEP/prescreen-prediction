@@ -7,23 +7,20 @@ the table containing additionnal patients information from SQL server
 import pandas as pd
 
 from clintk.utils.connection import get_engine, sql2df
-from clintk.utils.unfold import transform_and_label
 from clintk.utils.fold import Folder
 from clintk.text_parser.parser import ReportsParser
-from sklearn.pipeline import Pipeline
-from sklearn.feature_extraction.text import TfidfVectorizer
 
 import argparse
 
 
-def fetch_and_fold(path, id, ip, db, targets, n_reports):
+def fetch_and_fold(path, ID, ip, db, targets, n_reports):
     """ function to fetch radiology reports from vcare database
 
        Parameters
        ----------
        For definition of parameters, see arguments in `main_fetch_and_fold`
     """
-    engine = get_engine(id, ip, db)
+    engine = get_engine(ID, ip, db)
 
     key1, key2, date = 'patient_id', 'nip', 'date'
 
@@ -63,10 +60,7 @@ def fetch_and_fold(path, id, ip, db, targets, n_reports):
 
     # removing useless tags (blocks parsing)
     rad_folded['value'] = rad_folded.loc[:, 'value'].apply(lambda s: \
-                                                               str(s).replace(
-                                                                   '<u>',
-                                                                   '').replace(
-                                                                   '</u>', ''))
+        str(s).replace('<u>', '').replace('</u>', ''))
 
     sections = ['resultats', 'resultat', 'evaluation des cibles', 'conclusion']
     parser = ReportsParser(headers='b', is_html=False, col_name='value',
