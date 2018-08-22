@@ -16,35 +16,20 @@ import datetime
 import argparse
 
 
-def fetch_and_fold():
-    description = 'Folding cc text reports from Simbad'
-    parser = argparse.ArgumentParser(description=description)
+def fetch_and_fold(path, id, ip, db, targets, n_reports):
+    """ function to fetch reports from simbad data
 
-    parser.add_argument('-p', '--path',
-                        help='path to file that contains the reports')
-    parser.add_argument('--id', '-I',
-                        help='id to connect to sql server')
-    parser.add_argument('--ip', '-a',
-                        help='ip address of the sql server')
-    parser.add_argument('--db', '-d',
-                        help='name of the database on the sql server')
-    parser.add_argument('--targets', '-t',
-                        help='name of the table containing targets on the db')
-    parser.add_argument('--output', '-o',
-                        help='output path to write the folded result')
+    Parameters
+    ----------
+    For definition of parameters, see arguments in `main_fetch_and_fold`
+    """
 
-    args = parser.parse_args()
-
-    # getting variables from args
-    PATH = args.path
-
-    engine = get_engine(args.id, args.ip, args.db)
+    engine = get_engine(id, ip, db)
     # fetching targets
-    df_targets = sql2df(engine, args.targets)
-
+    df_targets = sql2df(engine, targets)
 
     # fetching reports
-    df = pd.read_excel(PATH)
+    df = pd.read_excel(path)
 
     # normalize nip
     df['nip'] = df['N° Dossier patient IGR'].astype(str) + df['LC']
@@ -92,14 +77,42 @@ def fetch_and_fold():
     df = df[df['value'] != '']
     df.drop_duplicates(inplace=True)
 
+    return df
+
+
+def main_fetch_and_fold():
+    description = 'Folding cc text reports from Simbad'
+    parser = argparse.ArgumentParser(description=description)
+
+    parser.add_argument('-p', '--path',
+                        help='path to file that contains the reports')
+    parser.add_argument('--id', '-I',
+                        help='id to connect to sql server')
+    parser.add_argument('--ip', '-a',
+                        help='ip address of the sql server')
+    parser.add_argument('--db', '-d',
+                        help='name of the database on the sql server')
+    parser.add_argument('--targets', '-t',
+                        help='name of the table containing targets on the db')
+    parser.add_argument('--output', '-o',
+                        help='output path to write the folded result')
+    parser.add_argument('-n', '--nb',
+                        help='number of reports to fetch')
+
+    args = parser.parse_args()
+
+    # getting variables from args
+    df = fetch_and_fold(args.path, args.id, args.ip, args.db, args.targets,
+                        args.nb)
+
     output = args.output
     df.to_csv(output, sep=';', encoding='utf-8')
 
     print('done')
 
-    return df
+    return 0
 
 
 
 if __name__ == "__main__":
-    fetch_and_fold()
+    main_fetch_and_fold()

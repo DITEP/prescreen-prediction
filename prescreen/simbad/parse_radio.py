@@ -10,35 +10,15 @@ import pandas as pd
 from clintk.text_parser.parser import ReportsParser
 from clintk.utils.connection import get_engine, sql2df
 
-import datetime
 import argparse
 
 
-def parse_cr():
-    description = 'Folding radiology reports from Simbad'
-    parser = argparse.ArgumentParser(description=description)
+def parse_cr(path, id, ip, db, targets, n_reports):
+    PATH = path
 
-    parser.add_argument('-p', '--path',
-                        help='path to file that contains the reports')
-    parser.add_argument('--id', '-I',
-                        help='id to connect to sql server')
-    parser.add_argument('--ip', '-a',
-                        help='ip adress of the sql server')
-    parser.add_argument('--db', '-d',
-                        help='name of the database on the sql server')
-    parser.add_argument('--targets', '-t',
-                        help='name of the table containing targets on the db')
-    parser.add_argument('--output', '-o',
-                        help='output path to write the folded result')
-
-    args = parser.parse_args()
-
-    # getting variables from args
-    PATH = args.path
-
-    engine = get_engine(args.id, args.ip, args.db)
+    engine = get_engine(id, ip, db)
     # fetching targets
-    df_targets = sql2df(engine, args.targets)
+    df_targets = sql2df(engine, targets)
 
     # fetching reports
     # PATH = 'data/cr_sfditep_2012.xlsx'
@@ -83,9 +63,36 @@ def parse_cr():
     # dropping empty rows
     df = df[df['value'] != '']
 
-    df['feature'] = ['rad']*df.shape[0]
+    df['feature'] = ['rad'] * df.shape[0]
 
     df = df.loc[:, ['nip', 'id', 'feature', 'value', 'date']]
+
+    return df
+
+
+def main_parse_cr():
+    description = 'Folding radiology reports from Simbad'
+    parser = argparse.ArgumentParser(description=description)
+
+    parser.add_argument('-p', '--path',
+                        help='path to file that contains the reports')
+    parser.add_argument('--id', '-I',
+                        help='id to connect to sql server')
+    parser.add_argument('--ip', '-a',
+                        help='ip adress of the sql server')
+    parser.add_argument('--db', '-d',
+                        help='name of the database on the sql server')
+    parser.add_argument('--targets', '-t',
+                        help='name of the table containing targets on the db')
+    parser.add_argument('--output', '-o',
+                        help='output path to write the folded result')
+    parser.add_argument('-n', '--nb',
+                        help='number of reports to fetch')
+
+    args = parser.parse_args()
+
+    # getting variables from args
+    df = parse_cr(args.path, args.id, args.ip, args.db, args.targets, args.nb)
 
     # output = '/home/v_charvet/workspace/data/features/simbad/radiology_v{}.csv'
     output = args.output
@@ -93,7 +100,7 @@ def parse_cr():
 
     print('done')
 
-    return df
+    return 0
 
 
 if __name__ == "__main__":
