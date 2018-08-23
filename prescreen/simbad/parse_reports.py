@@ -38,19 +38,29 @@ def fetch_and_fold(path, ID, ip, db, targets, n_reports):
     df.drop(['N° Dossier patient IGR', 'LC', 'NOCET', 'SIGLE_ETUDE',
              'LIBELLE_TYPE_ETUDE', 'NUM CR', 'CR RESP'], axis=1, inplace=True)
 
+    df.rename(columns={'CR DATE': 'date', 'text CR': 'value'}, inplace=True)
+
     df_cc = df[df['CR NAT'] == 'CC']
     df_rh = df[df['CR NAT'] == 'RH']
 
     # taking only the first for each patient
-    df_cc = df_cc.groupby('nip', as_index=False).agg('first')
+    df_cc.dropna(inplace=True)
+    df_cc.drop_duplicates(subset=['value'], inplace=True)
+
+    # taking only the first reports
+    group_dict = {'date': 'first', 'DATE_SIGN_OK': 'last',
+                  'value': lambda g: ' '.join(g[:n_reports])}
+    df_cc = df_cc.groupby('nip', as_index=False).agg(group_dict)
 
     # filter uninformative reports and taking the first
-    df_rh = df_rh[~(df_rh['text CR'].str.match('Examen du', na=False))]
-    df_rh = df_rh.groupby('nip', as_index=False).agg('first')
+    df_rh = df_rh[~(df_rh['value'].str.match('Examen du', na=False))]
+    df_rh.dropna(inplace=True)
+    df_rh.drop_duplicates(subset=['value'], inplace=True)
+
+    # taking only the first reports
+    df_rh = df_rh.groupby('nip', as_index=False).agg(group_dict)
 
     df = pd.concat([df_cc, df_rh], ignore_index=True)
-
-    df.rename(columns={'CR DATE': 'date', 'text CR': 'value'}, inplace=True)
 
     # keep only date in 'date columns'
     df['date'] = df.loc[:, 'date'].dt.date
@@ -66,7 +76,7 @@ def fetch_and_fold(path, ID, ip, db, targets, n_reports):
     df = df.merge(df_targets, on='nip')
 
     parser = ReportsParser(headers='b', is_html=False, norm=False,
-                           n_jobs=1, col_name='value')
+                           n_jobs=-1, col_name='value')
 
     df['value'] = parser.transform(df)
 
@@ -96,7 +106,7 @@ def main_fetch_and_fold():
     parser.add_argument('--output', '-o',
                         help='output path to write the folded result')
     parser.add_argument('-n', '--nb',
-                        help='number of reports to fetch')
+                        help='number of reports to fetch', type=int)
 
     args = parser.parse_args()
 

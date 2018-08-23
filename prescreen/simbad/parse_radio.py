@@ -45,8 +45,13 @@ def parse_cr(path, id, ip, db, targets, n_reports):
     df.drop(['N° Dossier patient IGR', 'LC', 'NOCET', 'SIGLE_ETUDE',
              'LIBELLE_TYPE_ETUDE', 'NUM CR', 'CR RESP'], axis=1, inplace=True)
 
-    # taking only the first report
-    df = df.groupby('nip', as_index=False).agg('first')
+    df.dropna(inplace=True)
+    df.drop_duplicates(subset=['value'], inplace=True)
+
+    # taking only the first reports
+    group_dict = {'date': 'first', 'DATE_SIGN_OK': 'last',
+                  'value': lambda g: ' '.join(g[:n_reports])}
+    df = df.groupby('nip', as_index=False).agg(group_dict)
 
     df = df.merge(df_targets, on='nip')
 
@@ -54,9 +59,14 @@ def parse_cr(path, id, ip, db, targets, n_reports):
     df['value'] = df.loc[:, 'value'].apply(lambda s: \
         str(s).replace('<u>', '').replace('</u>', ''))
 
-    sections = ['resultats', 'resultat', 'evaluation des cibles', 'conclusion']
+    sections = ('resultats', 'resultat', 'evaluation des cibles', 'conclusion',
+                'lesions non cibles', 'nouvelles lesions',
+                'lesion s non cible s', 'nouvelle s lesion s',
+                'resultats a l etage thoracique', 'en fenetre osseuse',
+                'a l etage abdomino plevien', 'conclusion :', '')
     parser = ReportsParser(headers='b', is_html=False, col_name='value',
-                           sections=sections)
+                           sections=sections,
+                           n_jobs=-1)
 
     df['value'] = parser.transform(df)
 
@@ -87,7 +97,7 @@ def main_parse_cr():
     parser.add_argument('--output', '-o',
                         help='output path to write the folded result')
     parser.add_argument('-n', '--nb',
-                        help='number of reports to fetch')
+                        help='number of reports to fetch', type=int)
 
     args = parser.parse_args()
 

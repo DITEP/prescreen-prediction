@@ -44,8 +44,14 @@ def fetch_and_fold(table, ID, ip, db, targets, n_reports):
     folder = Folder(key1, key2, ['report'], date, n_jobs=-1)
     reports_folded = folder.fold(df_reports)
 
-    # taking only first report
-    reports_folded = reports_folded.groupby(key1, as_index=False).agg('first')
+    reports_folded.dropna(inplace=True)
+    reports_folded.drop_duplicates(subset=['value'], inplace=True)
+
+    # taking only first `n_reports` reports
+    group_dict = {key2: 'first', 'feature': 'first', date: 'last',
+                  'value': lambda g: ' '.join(g[:n_reports])}
+    reports_folded = reports_folded.groupby(key1, as_index=False)\
+        .agg(group_dict)
 
     # parsing and vectorising text reports
     sections = ['examens complementaire', 'hopital de jour',
@@ -76,7 +82,7 @@ def main_fetch_and_fold():
     parser.add_argument('--output', '-o',
                         help='output path to write the folded result')
     parser.add_argument('-n', '--nb',
-                        help='number of reports to fetch')
+                        help='number of reports to fetch', type=int)
     args = parser.parse_args()
 
     # getting variables from args
