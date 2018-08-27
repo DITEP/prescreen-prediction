@@ -3,7 +3,7 @@ fetching biology measurements
 """
 import pandas as pd
 
-from preprocessing.utils.connection import get_engine, sql2df
+from clintk.utils.connection import get_engine, sql2df
 from datetime import timedelta
 from bs4 import BeautifulSoup
 from io import StringIO

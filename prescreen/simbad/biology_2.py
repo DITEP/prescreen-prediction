@@ -3,7 +3,7 @@ fetches biology for simbad
 """
 import pandas as pd
 
-from preprocessing.utils.connection import get_engine, sql2df
+from clintk.utils.connection import get_engine, sql2df
 from datetime import timedelta
 from bs4 import BeautifulSoup
 from io import StringIO
@@ -60,7 +60,6 @@ def fetch(url, header_path, id, ip, dbase, targets_table):
     cols = [KEY2, 'Analyse', 'Resultat', 'Date prelvt']
     df_res = pd.DataFrame(data=None, columns=cols)
 
-
     for index, row in df_ids.iterrows():
         nip = row[KEY2].replace(' ', '')
         # patient_id = row['patient_id']
@@ -90,7 +89,7 @@ def fetch(url, header_path, id, ip, dbase, targets_table):
     return df_res
 
 
-def fetch_and_fold(version, url, header, id, ip, db, targets):
+def fetch_and_fold(url, header, id, ip, db, targets):
     key1, key2, date = 'patient_id', 'nip', 'date'
     # engine for sql connection
     engine = get_engine(id, ip, db)
@@ -142,37 +141,30 @@ def main_fetch_and_fold():
     description = 'Folding biology measures from Ventura Care'
     parser = argparse.ArgumentParser(description=description)
 
-    parser.add_argument(['--version', '-V'],
-                        help='version number to keep track of files')
-    parser.add_argument(['--url', '-u'],
+    parser.add_argument('--url', '-u',
                         help='url to where measures are stored')
-    parser.add_argument(['--header', '-h'],
+    parser.add_argument('--header', '-H',
                         help='path to the header file to read csv')
-    parser.add_argument(['--id', '-I'],
+    parser.add_argument('--id', '-I',
                         help='id to connect to sql server')
-    parser.add_argument(['--ip', '-a'],
+    parser.add_argument('--ip', '-a',
                         help='ip adress of the sql server')
-    parser.add_argument(['--db', '-d'],
+    parser.add_argument('--db', '-d',
                         help='name of the database on the sql server')
-    parser.add_argument(['--targets', '-t'],
+    parser.add_argument('--targets', '-t',
                         help='name of the table containing targets on the db')
-    parser.add_argument(['--output', '-o'],
+    parser.add_argument('--output', '-o',
                         help='output path to write the folded result')
 
     args = parser.parse_args()
 
-    VERSION = args.V
 
-    args = parser.parse_args(VERSION, args.a, args.h, args.I, args.d, args.t)
-
-    # column names for merged dataframe
-    #
-    VERSION = args.V
-    df_bio = fetch_and_fold()
+    df_bio = fetch_and_fold(args.url, args.header,args.id, args.ip,
+                            args.db, args.targets)
     # df_bio already folded
 
-    output = args.o
-    df_bio.to_csv(output.format(VERSION), encoding='utf-8', sep=';')
+    output = args.output
+    df_bio.to_csv(output, encoding='utf-8', sep=';')
 
     print('done')
 
