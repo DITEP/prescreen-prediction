@@ -4,7 +4,7 @@ script to load SF patients that are not in VCare into the database
 """
 import pandas as pd
 
-from preprocessing.utils.connection import get_engine
+from clintk.utils.connection import get_engine
 
 import argparse
 
