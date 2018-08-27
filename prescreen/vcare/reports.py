@@ -10,15 +10,13 @@ from clintk.text_parser.parser import ReportsParser
 import argparse
 
 
-def fetch_and_fold(table, ID, ip, db, targets, n_reports):
+def fetch_and_fold(table, engine, targets, n_reports):
     """ function to fetch reports from vcare database
 
     Parameters
     ----------
     For definition of parameters, see arguments in `main_fetch_and_fold`
     """
-    engine = get_engine(ID, ip, db)
-
     key1, key2, date = 'patient_id', 'nip', 'date'
 
     # data used to train the model
@@ -86,9 +84,9 @@ def main_fetch_and_fold():
     args = parser.parse_args()
 
     # getting variables from args
+    engine = get_engine(args.id, args.ip, args.db)
 
-    reports_folded = fetch_and_fold(args.reports, args.id, args.ip, args.db,
-                                    args.targets, args.nb)
+    reports_folded = fetch_and_fold(args.reports, engine, args.targets, args.nb)
 
     output = args.output
     reports_folded.to_csv(output, encoding='utf-8', sep=';')
