@@ -15,7 +15,7 @@ from clintk.utils.connection import get_engine, sql2df
 import argparse
 
 
-def fetch_and_fold(path, ID, ip, db, targets, n_reports):
+def fetch_and_fold(path, engine, targets, n_reports):
     """ function to fetch reports from simbad data
 
     Parameters
@@ -23,7 +23,6 @@ def fetch_and_fold(path, ID, ip, db, targets, n_reports):
     For definition of parameters, see arguments in `main_fetch_and_fold`
     """
 
-    engine = get_engine(ID, ip, db)
     # fetching targets
     df_targets = sql2df(engine, targets)
 
@@ -110,9 +109,10 @@ def main_fetch_and_fold():
 
     args = parser.parse_args()
 
+    engine = get_engine(args.id, args.ip, args.db)
+
     # getting variables from args
-    df = fetch_and_fold(args.path, args.id, args.ip, args.db, args.targets,
-                        args.nb)
+    df = fetch_and_fold(args.path, engine, args.targets, args.nb)
 
     output = args.output
     df.to_csv(output, sep=';', encoding='utf-8')

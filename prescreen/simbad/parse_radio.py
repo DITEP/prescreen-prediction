@@ -13,10 +13,9 @@ from clintk.utils.connection import get_engine, sql2df
 import argparse
 
 
-def parse_cr(path, id, ip, db, targets, n_reports):
+def parse_cr(path, engine, targets, n_reports):
     PATH = path
 
-    engine = get_engine(id, ip, db)
     # fetching targets
     df_targets = sql2df(engine, targets)
 
@@ -101,8 +100,10 @@ def main_parse_cr():
 
     args = parser.parse_args()
 
+    engine = get_engine(args.id, args.ip, args.db)
+
     # getting variables from args
-    df = parse_cr(args.path, args.id, args.ip, args.db, args.targets, args.nb)
+    df = parse_cr(args.path,engine, args.targets, args.nb)
 
     # output = '/home/v_charvet/workspace/data/features/simbad/radiology_v{}.csv'
     output = args.output
