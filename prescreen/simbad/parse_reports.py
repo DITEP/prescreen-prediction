@@ -39,31 +39,38 @@ def fetch_and_fold(path, engine, targets, n_reports):
 
     df.rename(columns={'CR DATE': 'date', 'text CR': 'value'}, inplace=True)
 
-    df_cc = df[df['CR NAT'] == 'CC']
-    df_rh = df[df['CR NAT'] == 'RH']
-
-    # taking only the first for each patient
-    df_cc.dropna(inplace=True)
-    df_cc.drop_duplicates(subset=['value'], inplace=True)
-
-    # taking only the first reports
-    group_dict = {'date': 'first', 'DATE_SIGN_OK': 'last',
-                  'value': lambda g: ' '.join(g[:n_reports])}
-    df_cc = df_cc.groupby('nip', as_index=False).agg(group_dict)
-
-    # filter uninformative reports and taking the first
-    df_rh = df_rh[~(df_rh['value'].str.match('Examen du', na=False))]
-    df_rh.dropna(inplace=True)
-    df_rh.drop_duplicates(subset=['value'], inplace=True)
-
-    # taking only the first reports
-    df_rh = df_rh.groupby('nip', as_index=False).agg(group_dict)
-
-    df = pd.concat([df_cc, df_rh], ignore_index=True)
-
     # keep only date in 'date columns'
     df['date'] = df.loc[:, 'date'].dt.date
     df['DATE_SIGN_OK'] = df.loc[:, 'DATE_SIGN_OK'].dt.date
+
+    # taking only consultation reports
+    df = df[df['CR NAT'] == 'CC']
+
+    # mask to get only the first one
+    mask = (df['date'] == df['DATE_SIGN_OK'])
+    df = df[mask]
+
+    # df_rh = df[df['CR NAT'] == 'RH']
+
+    # taking only the first for each patient
+    df.dropna(inplace=True)
+    df.drop_duplicates(subset=['value'], inplace=True)
+
+    # taking only the first reports
+    group_dict = {'date': 'first', 'DATE_SIGN_OK': 'last',
+                  'value': lambda g: ' '.join(g)}
+    df = df.groupby('nip', as_index=False).agg(group_dict)
+
+    # # filter uninformative reports and taking the first
+    # df_rh = df_rh[~(df_rh['value'].str.match('Examen du', na=False))]
+    # df_rh.dropna(inplace=True)
+    # df_rh.drop_duplicates(subset=['value'], inplace=True)
+    #
+    # # taking only the first reports
+    # df_rh = df_rh.groupby('nip', as_index=False).agg(group_dict)
+    #
+    # df = pd.concat([df_cc, df_rh], ignore_index=True)
+
 
     # removing useless tags (blocks parsing)
     df['value'] = df.loc[:, 'value'].apply(lambda s: \

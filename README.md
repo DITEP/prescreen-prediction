@@ -5,6 +5,5 @@ in medical oncology.
 
 The objective is to find better eligibility criteria for clinical trials.
 
-@TODO tests main scripts with argparse
-
+@TODO do a unique biology script
 
