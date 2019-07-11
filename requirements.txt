@@ -43,10 +43,10 @@ seaborn==0.8.1
 simplegeneric==0.8.1
 six==1.11.0
 smart-open==1.5.7
-SQLAlchemy==1.2.7
+SQLAlchemy>=1.3.0
 statsmodels==0.9.0
 traitlets==4.3.2
 Unidecode==1.0.22
-urllib3==1.22
+urllib3>=1.24.2
 wcwidth==0.1.7
 xlrd==1.1.0
