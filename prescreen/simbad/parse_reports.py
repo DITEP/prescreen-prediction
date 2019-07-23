@@ -8,6 +8,7 @@ train a tfidf model
 
 """
 import pandas as pd
+import re
 
 from clintk.text_parser.parser import ReportsParser
 from clintk.utils.connection import get_engine, sql2df
@@ -17,7 +18,6 @@ import argparse
 
 def fetch_and_fold(path, engine, targets, n_reports):
     """ function to fetch reports from simbad data
-
     Parameters
     ----------
     For definition of parameters, see arguments in `main_fetch_and_fold`
@@ -28,7 +28,7 @@ def fetch_and_fold(path, engine, targets, n_reports):
 
     # fetching reports
     df = pd.read_excel(path)
-
+    
     # normalize nip
     df['nip'] = df['N° Dossier patient IGR'].astype(str) + df['LC']
     df['nip'] = df.loc[:, 'nip'] \
@@ -45,22 +45,53 @@ def fetch_and_fold(path, engine, targets, n_reports):
 
     # taking only consultation reports
     df = df[df['CR NAT'] == 'CC']
-
-    # mask to get only the first one
-    mask = (df['date'] == df['DATE_SIGN_OK'])
-    df = df[mask]
-
-    # df_rh = df[df['CR NAT'] == 'RH']
-
-    # taking only the first for each patient
+    
+    # removing NAs and dups N°1
     df.dropna(inplace=True)
     df.drop_duplicates(subset=['value'], inplace=True)
-
-    # taking only the first reports
-    group_dict = {'date': 'first', 'DATE_SIGN_OK': 'last',
+   
+    # mask to get only the first one
+    ############# LV: no, that's not it!
+#    mask = (df['date'] == df['DATE_SIGN_OK'])
+#    df = df[mask]
+    
+    # search for 'inclusion' term and others relevant ones in values
+    
+    IncL=[]
+    for line in df.index:
+       if re.search("inclusion|screening|protocole|consentement",df.loc[line,'value']): 
+            IncL.append(line)
+    #len(IncL)
+    #df.loc[IncL[10],'value']
+    
+    # create dfinc
+    dfinc=df.loc[IncL,] 
+    
+    # taking only the first reports for each patient for df and dfinc
+        # LV: ? does it take only first reports (from date) or concatenate duplicated reports of patients?
+    
+    group_dict = {'nip','date': 'first', 'DATE_SIGN_OK': 'last',
                   'value': lambda g: ' '.join(g)}
-    df = df.groupby('nip', as_index=False).agg(group_dict)
-
+    # for df
+    df1 = df.groupby('nip', as_index=False).agg(group_dict)
+    
+    # for dfinc
+    dfinc = dfinc.groupby('nip', as_index=False).agg(group_dict)
+    #dfinc.loc[3,'value']
+    
+    # identify 1st reports not retained in dfinc
+    NIPlacks=[]
+    for NIPindex in df1.index:
+        if df1.nip[NIPindex] not in dfinc.nip:
+            NIPlacks.append(NIPindex)
+    len(NIPlacks)
+    
+    #df1.loc[NIPlacks[len(NIPlacks)-1],"value"]
+    
+    # concatenate both df1 and dfinc
+    dfall = pd.concat([dfinc, df1], axis=0, ignore_index=True)
+   # dfall.head()
+    
     # # filter uninformative reports and taking the first
     # df_rh = df_rh[~(df_rh['value'].str.match('Examen du', na=False))]
     # df_rh.dropna(inplace=True)
@@ -73,27 +104,29 @@ def fetch_and_fold(path, engine, targets, n_reports):
 
 
     # removing useless tags (blocks parsing)
-    df['value'] = df.loc[:, 'value'].apply(lambda s: \
+    dfall['value'] = dfall.loc[:, 'value'].apply(lambda s: \
         str(s).replace('<u>', '').replace('</u>', ''))
 
     # filter date
     # df = df[df['date'] <= (df['DATE_SIGN_OK'] + datetime.timedelta(weeks=8))]
 
-    df = df.merge(df_targets, on='nip')
+    dfall = dfall.merge(df_targets, on='nip')
 
+    # ReportParser function is in clintk/text_parser/parser_utils.py
     parser = ReportsParser(headers='b', is_html=False, norm=False,
                            n_jobs=-1, col_name='value')
 
-    df['value'] = parser.transform(df)
+    dfall['value'] = parser.transform(dfall)
 
-    df['feature'] = ['report']*df.shape[0]
+    dfall['feature'] = ['report']*dfall.shape[0]
 
-    df = df.loc[:, ['nip', 'id', 'feature', 'value', 'date']]
-    df = df[df['value'] != '']
-    df.drop_duplicates(inplace=True)
+    dfall = dfall.loc[:, ['nip', 'id', 'feature', 'value', 'date']]
+    
+    # I would put those 2 functions in line 54 : removing NAs and dups N°1
+    dfall = dfall[dfall['value'] != ''] # are tere some?
+    dfall.drop_duplicates(inplace=True) # usefull? are there some?
 
-    return df
-
+    return dfall
 
 def main_fetch_and_fold():
     description = 'Folding cc text reports from Simbad'
