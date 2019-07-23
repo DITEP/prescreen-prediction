@@ -91,6 +91,10 @@ def fetch_and_fold(path, engine, targets, n_reports):
     # concatenate both df1 and dfinc
     dfall = pd.concat([dfinc, df1], axis=0, ignore_index=True)
    # dfall.head()
+     
+    
+    pd.concat(g for _, g in df.groupby("nip") if len(g) > 1)
+    ####### ????? why still some dupllicates???
     
     # # filter uninformative reports and taking the first
     # df_rh = df_rh[~(df_rh['value'].str.match('Examen du', na=False))]
