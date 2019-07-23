@@ -70,7 +70,7 @@ def fetch_and_fold(path, engine, targets, n_reports):
     # taking only the first reports for each patient for df and dfinc
         # LV: ? does it take only first reports (from date) or concatenate duplicated reports of patients?
     
-    group_dict = {'nip','date': 'first', 'DATE_SIGN_OK': 'last',
+    group_dict = {'date': 'first', 'DATE_SIGN_OK': 'last',
                   'value': lambda g: ' '.join(g)}
     # for df
     df1 = df.groupby('nip', as_index=False).agg(group_dict)
