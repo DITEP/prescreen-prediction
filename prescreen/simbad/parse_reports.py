@@ -76,7 +76,7 @@ def fetch_and_fold(path, engine, targets, n_reports):
 
     dfall = dfall.loc[:, ['nip', 'id', 'feature', 'value', 'date']]
     
-    # I would put those 2 functions in line 54 : removing NAs and dups N°1
+      # why are there still NAs and dups here ????
   #  dfall = dfall[dfall['value'] != ''] # are tere some?
   #  dfall.drop_duplicates(inplace=True) # usefull? are there some?
 
