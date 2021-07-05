@@ -1,23 +1,27 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Jul 22 22:16:33 2019
+
+@author: Valentin Charvet, Loic Verlingue
+"""
+
 """
 script to parse reports from cr_sfditep-2012.xslsx
-
 parses CC and RH reports
-
 after parsing them, they need to be concatenated to the ones from vcare to
 train a tfidf model
-
 """
 import pandas as pd
 
 from clintk.text_parser.parser import ReportsParser
 from clintk.utils.connection import get_engine, sql2df
+from prescreen.simbad.ScreenCons import ScreenCons
 
 import argparse
 
-
+# n_reports : no use
 def fetch_and_fold(path, engine, targets, n_reports):
     """ function to fetch reports from simbad data
-
     Parameters
     ----------
     For definition of parameters, see arguments in `main_fetch_and_fold`
@@ -28,7 +32,7 @@ def fetch_and_fold(path, engine, targets, n_reports):
 
     # fetching reports
     df = pd.read_excel(path)
-
+    
     # normalize nip
     df['nip'] = df['N° Dossier patient IGR'].astype(str) + df['LC']
     df['nip'] = df.loc[:, 'nip'] \
@@ -45,54 +49,38 @@ def fetch_and_fold(path, engine, targets, n_reports):
 
     # taking only consultation reports
     df = df[df['CR NAT'] == 'CC']
-
-    # mask to get only the first one
-    mask = (df['date'] == df['DATE_SIGN_OK'])
-    df = df[mask]
-
-    # df_rh = df[df['CR NAT'] == 'RH']
-
-    # taking only the first for each patient
+    
+    # removing NAs and dups N°1
     df.dropna(inplace=True)
     df.drop_duplicates(subset=['value'], inplace=True)
-
-    # taking only the first reports
-    group_dict = {'date': 'first', 'DATE_SIGN_OK': 'last',
-                  'value': lambda g: ' '.join(g)}
-    df = df.groupby('nip', as_index=False).agg(group_dict)
-
-    # # filter uninformative reports and taking the first
-    # df_rh = df_rh[~(df_rh['value'].str.match('Examen du', na=False))]
-    # df_rh.dropna(inplace=True)
-    # df_rh.drop_duplicates(subset=['value'], inplace=True)
-    #
-    # # taking only the first reports
-    # df_rh = df_rh.groupby('nip', as_index=False).agg(group_dict)
-    #
-    # df = pd.concat([df_cc, df_rh], ignore_index=True)
-
+   
+    # ScreenCons function in ...
+    dfall=ScreenCons(df)
 
     # removing useless tags (blocks parsing)
-    df['value'] = df.loc[:, 'value'].apply(lambda s: \
+    dfall['value'] = dfall.loc[:, 'value'].apply(lambda s: \
         str(s).replace('<u>', '').replace('</u>', ''))
 
     # filter date
     # df = df[df['date'] <= (df['DATE_SIGN_OK'] + datetime.timedelta(weeks=8))]
 
-    df = df.merge(df_targets, on='nip')
-
+    dfall = dfall.merge(df_targets, on='nip')
+    
+    # ReportParser function is in clintk/text_parser/parser_utils.py
     parser = ReportsParser(headers='b', is_html=False, norm=False,
                            n_jobs=-1, col_name='value')
 
-    df['value'] = parser.transform(df)
+    dfall['value'] = parser.transform(dfall)
 
-    df['feature'] = ['report']*df.shape[0]
+    dfall['feature'] = ['report']*dfall.shape[0]
 
-    df = df.loc[:, ['nip', 'id', 'feature', 'value', 'date']]
-    df = df[df['value'] != '']
-    df.drop_duplicates(inplace=True)
+    dfall = dfall.loc[:, ['nip', 'id', 'feature', 'value', 'date']]
+    
+      # why are there still NAs and dups here ????
+  #  dfall = dfall[dfall['value'] != ''] # are tere some?
+  #  dfall.drop_duplicates(inplace=True) # usefull? are there some?
 
-    return df
+    return dfall
 
 
 def main_fetch_and_fold():
@@ -127,7 +115,6 @@ def main_fetch_and_fold():
     print('done')
 
     return 0
-
 
 
 if __name__ == "__main__":
